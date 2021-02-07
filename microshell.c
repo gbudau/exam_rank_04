@@ -6,7 +6,7 @@
 /*   By: gbudau <gbudau@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/02/07 15:56:10 by gbudau            #+#    #+#             */
-/*   Updated: 2021/02/07 16:19:13 by gbudau           ###   ########.fr       */
+/*   Updated: 2021/02/07 16:30:57 by gbudau           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -171,6 +171,7 @@ int		main(int argc, char **argv, char **envp)
 	i = 1;
 	while (i < argc)
 	{
+		ispipeline = 0;
 		next = next_semicolon(argv, i, &ispipeline);
 		argv[next] = NULL;
 		if (!strcmp(argv[i], "cd"))
@@ -181,4 +182,5 @@ int		main(int argc, char **argv, char **envp)
 			execute_simple_cmd(argv, i, envp);
 		i = next + 1;
 	}
+	return (0);
 }
