@@ -6,7 +6,7 @@
 /*   By: gbudau <gbudau@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/02/07 15:56:10 by gbudau            #+#    #+#             */
-/*   Updated: 2021/02/07 16:30:57 by gbudau           ###   ########.fr       */
+/*   Updated: 2021/02/11 20:35:29 by gbudau           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,9 @@
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <sys/types.h>
+#define STDIN_FD 0
+#define STDOUT_FD 1
+#define STDERR_FD 2
 
 typedef struct	s_cmd
 {
@@ -36,7 +39,7 @@ int		ft_strlen(char *str)
 
 void	ft_putstr_err(char *str)
 {
-	if (write(STDERR_FILENO, str, ft_strlen(str)) == -1)
+	if (write(STDERR_FD, str, ft_strlen(str)) == -1)
 		exit(EXIT_FAILURE);
 }
 
@@ -111,9 +114,9 @@ void	dup2_close(int pipefds[2], int fd)
 	if (fd != -1)
 		if (dup2(pipefds[fd], fd) == -1)
 			error_fatal();
-	if (close(pipefds[STDIN_FILENO]) == -1)
+	if (close(pipefds[STDIN_FD]) == -1)
 		error_fatal();
-	if (close(pipefds[STDOUT_FILENO]) == -1)
+	if (close(pipefds[STDOUT_FD]) == -1)
 		error_fatal();
 }
 
@@ -140,9 +143,9 @@ void	execute_pipeline(char **argv, int i, char **envp)
 		if (pid == 0)
 		{
 			if (havepipe)
-				dup2_close(cmd.lastpipe, STDIN_FILENO);
+				dup2_close(cmd.lastpipe, STDIN_FD);
 			if (cmd.ispipe)
-				dup2_close(cmd.currpipe, STDOUT_FILENO);
+				dup2_close(cmd.currpipe, STDOUT_FD);
 			execve(cmd.argv[0], cmd.argv, envp);
 			print_error("error: cannot execute ", cmd.argv[0]); 
 			exit(EXIT_FAILURE);
@@ -152,14 +155,21 @@ void	execute_pipeline(char **argv, int i, char **envp)
 		havepipe = cmd.ispipe;
 		if (cmd.ispipe)
 		{
-			cmd.lastpipe[STDIN_FILENO] = cmd.currpipe[STDIN_FILENO];
-			cmd.lastpipe[STDOUT_FILENO] = cmd.currpipe[STDOUT_FILENO];
+			cmd.lastpipe[STDIN_FD] = cmd.currpipe[STDIN_FD];
+			cmd.lastpipe[STDOUT_FD] = cmd.currpipe[STDOUT_FD];
 		}
 		i = next + 1;
 	}
 	while (havepipe);
 	while (waitpid(-1, NULL, 0) > 0)
 		;
+}
+
+int		skip_semicolons(char **argv, int i)
+{
+	while (argv[i] && is_semicolon(argv[i]))
+		i++;
+	return (i);
 }
 
 int		main(int argc, char **argv, char **envp)
@@ -171,6 +181,9 @@ int		main(int argc, char **argv, char **envp)
 	i = 1;
 	while (i < argc)
 	{
+		i = skip_semicolons(argv, i);
+		if (!argv[i])
+			return (0);
 		ispipeline = 0;
 		next = next_semicolon(argv, i, &ispipeline);
 		argv[next] = NULL;
